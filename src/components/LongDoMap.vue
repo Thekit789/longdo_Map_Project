@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-// LongdoMap component is globally registered via app.use() in main.js
+// import myMarkerIcon from '../assets/map-pin.svg'
 
 // Reference to the map instance
 const map = ref(null)
@@ -10,50 +10,107 @@ const longdo = ref(null)
 // --- กำหนดพิกัดสำหรับหมุด ---
 const specificMarkerLocations = ref([
   {
-    lon: 100.30303,
-    lat: 14.926872,
-    title: 'จังหวัดสิงห์บุรี',
-    detail: 'สถานที่ท่องเที่ยวทางประวัติศาสตร์',
+    lon: 100.342469,
+    lat: 14.868726,
+    title: 'ตำบลสิงห์',
+    detail: 'หมู่ที่ 1<br>ประชากร 1,200 คน<br>จำนวนลูกค้า 300 คน',
   },
   {
-    lon: 100.695791,
-    lat: 14.807413,
-    title: 'จังหวัดลพบุรี',
-    detail: 'สถานที่ท่องเที่ยวทางธรรมชาติ',
+    lon: 100.326221,
+    lat: 14.876731,
+    title: 'ตำบลสิงห์',
+    detail: 'หมู่ที่ 2',
   },
   {
-    lon: 99.999189,
-    lat: 14.590229,
-    title: 'จังหวัดสุพรรณบุรี',
-    detail: 'สถานที่ท่องเที่ยวทางวัฒนธรรม',
+    lon: 100.318586,
+    lat: 14.889851,
+    title: 'ตำบลสิงห์',
+    detail: 'หมู่ที่ 3',
+  },
+  {
+    lon: 100.316957,
+    lat: 14.891523,
+    title: 'ตำบลสิงห์',
+    detail: 'หมู่ที่ 4',
+  },
+  {
+    lon: 100.312948,
+    lat: 14.893606,
+    title: 'ตำบลสิงห์',
+    detail: 'หมู่ที่ 5',
+  },
+  {
+    lon: 100.3094432,
+    lat: 14.89888741,
+    title: 'ตำบลสิงห์',
+    detail: 'หมู่ที่ 6',
+  },
+  {
+    lon: 100.3367025,
+    lat: 14.91033872,
+    title: 'ตำบลสิงห์',
+    detail: 'หมู่ที่ 7',
+  },
+  {
+    lon: 100.3669725,
+    lat: 14.87092789,
+    title: 'ตำบลสิงห์',
+    detail: 'หมู่ที่ 8',
+  },
+  {
+    lon: 100.337745116793,
+    lat: 14.8998167262144,
+    title: 'ตำบลสิงห์',
+    detail: 'หมู่ที่ 9',
   },
 ])
 
 // Function to be called when the map is loaded
 const onMapLoaded = (loadedMapObject) => {
-  // ตรวจสอบว่า loadedMapObject (ตัวแผนที่) และ window.longdo (API หลัก) พร้อมใช้งานหรือไม่
   if (loadedMapObject && window.longdo) {
     map.value = loadedMapObject // กำหนด map.value ด้วย loadedMapObject โดยตรง
     longdo.value = window.longdo // ดึง Longdo API object จาก global scope (window)
 
-    // Add the specific markers
-    addSpecificMarkers()
+    // addCustomOverlay()
+    const object4 = new longdo.value.Overlays.Object('170201;170206', 'IG', {
+      combine: true,
+      simplify: 0.00005,
+      ignorefragment: false,
+      lineColor: '#ff0202', //สีของเส้น
+      fillColor: null, //สีพื้นหลัง
+    })
+    map.value.Overlays.load(object4)
 
     if (map.value && map.value.Ui) {
       map.value.Ui.Scale.visible(true)
       map.value.Ui.Toolbar.visible(false)
     }
 
-    if (specificMarkerLocations.value.length > 0) {
-      map.value.location(
-        { lon: specificMarkerLocations.value[0].lon, lat: specificMarkerLocations.value[0].lat },
-        true,
-      )
-      map.value.zoom(9, true) // ปรับ zoom level ให้เห็นภาพรวมของจังหวัดใกล้เคียง
-    } else {
-      map.value.location({ lon: 100.5, lat: 13.75 }, true)
-      map.value.zoom(10, true)
-    }
+    // const marker = new longdo.value.Marker({ lon: 100.56, lat: 13.74 })
+    // map.value.Overlays.add(marker)
+
+    specificMarkerLocations.value.forEach((data, index) => {
+      let markerOptions = {
+        title: data.title || `หมุด ${index + 1}`,
+        detail: data.detail || `พิกัด: ${data.lat.toFixed(4)}, ${data.lon.toFixed(4)}`,
+        visibleRange: { min: 10, max: 20 },
+        // icon: { // ใช้ icon ที่กำหนดไว้ใน assets
+        //   url: myMarkerIcon,
+        //   Size: { width: 32, height: 32 },
+        //   offset: { x: 16, y: 32 },
+        // },
+      }
+
+      try {
+        let marker = new longdo.value.Marker(
+          { lon: data.lon, lat: data.lat },
+          markerOptions, // ใช้ options ที่ไม่มีการกำหนด icon
+        )
+        map.value.Overlays.add(marker)
+      } catch (error) {
+        console.error(`Error creating marker ${index + 1}:`, error)
+      }
+    })
   } else {
     console.error(
       'Failed to initialize map instance. loadedMapObject or window.longdo is missing.',
@@ -62,88 +119,44 @@ const onMapLoaded = (loadedMapObject) => {
     )
   }
 }
-
-// Function to add the predefined specific markers
-const addSpecificMarkers = () => {
-  console.log('Attempting to add specific markers with default Longdo Map icons...')
-  if (!map.value || !longdo.value) {
-    console.error(
-      'Map or Longdo API not ready to add specific markers. map.value:',
-      map.value,
-      'longdo.value:',
-      longdo.value,
-    )
-    return
-  }
-
-  console.log(`Number of specific locations: ${specificMarkerLocations.value.length}`)
-
-  specificMarkerLocations.value.forEach((loc, index) => {
-    console.log(`Processing marker ${index + 1}:`, loc)
-
-    let markerOptions = {
-      title: loc.title || `หมุด ${index + 1}`,
-      detail: loc.detail || `พิกัด: ${loc.lat.toFixed(4)}, ${loc.lon.toFixed(4)}`,
-      visibleRange: { min: 1, max: 20 },
-    }
-
-    try {
-      let marker = new longdo.value.Marker(
-        { lon: loc.lon, lat: loc.lat },
-        markerOptions, // ใช้ options ที่ไม่มีการกำหนด icon
-      )
-      map.value.Overlays.add(marker)
-    } catch (error) {
-      console.error(
-        `ERROR creating or adding marker ${index + 1} (${loc.title}):`,
-        error,
-        'Location:',
-        loc,
-      )
-    }
-  })
-  console.log(
-    `Finished attempting to add ${specificMarkerLocations.value.length} specific markers to the map.`,
-  )
-}
 </script>
 
 <template>
   <div class="map-wrapper-with-marker">
-    <p style="text-align: center; font-size: 0.9em; margin-bottom: 10px">
-      Demo Longdo Map with Pin Map
-    </p>
-    <longdo-map
-      class="map-container-marker"
-      :apiKey="'b3be4e0b99f8806a4f60860e2cac50c0'"
-      @load="onMapLoaded"
-    />
+    <p>Demo Longdo Map with Pin Map</p>
+    <longdo-map class="map-container-marker" @load="onMapLoaded" />
   </div>
 </template>
 
 <style scoped>
+p {
+  /* color: var(--color-text); */
+  color: rgb(92, 83, 83);
+  font-weight: 700;
+  font-size: 2em;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
 .map-wrapper-with-marker {
-  width: 900px;
+  width: 100%;
   padding: 10px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-size: 2rem;
-  font-weight: 900;
-  color: #e9e8e6;
 }
 
 .map-container-marker {
   width: 100%;
-  max-width: 900px; /* Limit map width for better layout */
-  height: 80vh; /* Adjust height as needed, e.g., 500px or 70vh */
+  max-width: 1000px;
+  height: 85vh;
   min-height: 450px;
-  border: 2px solid mediumseagreen; /* Changed border color */
-  background-color: #e0e0e0; /* Placeholder color */
+  border: 2px solid #e0e0e0;
+  background-color: #e0e0e0;
   margin-bottom: 15px;
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Added a subtle shadow */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 :global(.ldmap_popup.ldmap_selectable) {
@@ -172,6 +185,11 @@ const addSpecificMarkers = () => {
 }
 
 :global(.ldmap_dropdown_head span) {
+  color: #6b6a69;
+  font-weight: 900 !important;
+}
+
+:global(.ldmap_dropdown_body) {
   color: #6b6a69;
   font-weight: 900 !important;
 }

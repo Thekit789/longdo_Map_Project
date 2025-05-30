@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import MapLayoutView from '@/views/MapLayoutView.vue'
+import LongDoMap from '../components/LongDoMap.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -10,7 +12,14 @@ const router = createRouter({
     {
       path: '/LongDoMap',
       name: 'MAP',
-      component: () => import('../components/LongDoMap.vue'),
+      component: MapLayoutView,
+      children: [
+        {
+          path: '',
+          name: 'longdomap-content',
+          component: LongDoMap,
+        },
+      ],
     },
   ],
 })
