@@ -3,14 +3,14 @@ import { ref } from 'vue'
 import NavMenu from '@/components/NavMenu.vue'
 import DropdownMenu from '@/components/DropdownMenu.vue'
 import { RouterView } from 'vue-router'
+import { PanelLeftClose } from 'lucide-vue-next'
+import { PanelRightClose } from 'lucide-vue-next'
 
 const isSidebarOpen = ref(true) // เริ่มต้นให้ Sidebar เปิดอยู่
 
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value
 }
-
-// ไม่ต้องใช้ containerClasses แล้ว เนื่องจากเราจะจัดการปุ่มแยกต่างหาก
 </script>
 
 <template>
@@ -21,8 +21,8 @@ const toggleSidebar = () => {
     </aside>
 
     <button @click="toggleSidebar" class="toggle-button" :class="{ moved: !isSidebarOpen }">
-      <span v-if="isSidebarOpen" class="arrow-icon">&lt;</span>
-      <span v-else class="arrow-icon">&gt;</span>
+      <span v-if="isSidebarOpen" class="arrow-icon"><PanelLeftClose /></span>
+      <span v-else class="arrow-icon"><PanelRightClose /></span>
     </button>
 
     <main class="map-content" :class="{ expanded: !isSidebarOpen }">
@@ -37,13 +37,13 @@ const toggleSidebar = () => {
   min-height: 100vh;
   width: 100%;
   box-sizing: border-box;
-  overflow: hidden; /* ป้องกัน scrollbar ไม่พึงประสงค์จากการ transition */
-  position: relative; /* สำคัญ: เพื่อให้ปุ่ม toggle สามารถใช้ absolute positioning ได้ */
+  overflow: hidden; /* ป้องกัน scrollbar จากการ transition */
+  position: relative; /* ให้ปุ่ม toggle สามารถใช้ absolute positioning ได้ */
 }
 
-/* Base styles สำหรับ Sidebar */
+/* Base styles Sidebar */
 .map-sidebar {
-  width: 30%; /* ความกว้างเริ่มต้นเมื่อเปิด */
+  width: 25%;
   background-color: #f0f0f0;
   padding: 1rem;
   box-sizing: border-box;
@@ -52,25 +52,24 @@ const toggleSidebar = () => {
   gap: 1.5rem;
   transition:
     width 0.3s ease-in-out,
-    padding 0.3s ease-in-out; /* เพิ่ม transition */
+    padding 0.3s ease-in-out;
   overflow: hidden; /* ซ่อนเนื้อหาเมื่อย่อขนาด */
-  flex-shrink: 0; /* ป้องกันไม่ให้ sidebar หดตัวเมื่อพื้นที่ไม่พอ */
+  flex-shrink: 0;
 }
 
 /* Style เมื่อ Sidebar ปิด */
 .map-sidebar.closed {
-  width: 0; /* Sidebar หดเหลือ 0 */
-  padding: 0; /* ลบ padding เมื่อปิด */
-  /* อาจจะใช้ transform: translateX(-100%); แทน width: 0; หากต้องการให้มันเลื่อนออกไปจริงๆ */
+  width: 0;
+  padding: 0;
 }
 
-/* Base styles สำหรับ Content */
+/* Base styles Content */
 .map-content {
-  width: 70%; /* ความกว้างเริ่มต้นเมื่อ Sidebar เปิด */
+  width: 75%;
   background-color: #e8e8e8;
   box-sizing: border-box;
-  transition: width 0.3s ease-in-out; /* เพิ่ม transition */
-  flex-grow: 1; /* ให้ content ขยายเต็มพื้นที่ที่เหลือ */
+  transition: width 0.3s ease-in-out;
+  flex-grow: 1;
 }
 
 /* Style เมื่อ Content ขยายเต็ม */
@@ -80,11 +79,11 @@ const toggleSidebar = () => {
 
 /* Style สำหรับปุ่มเปิด/ปิด Sidebar */
 .toggle-button {
-  position: absolute; /* วางตำแหน่งปุ่มบน container หลัก */
-  top: 5%; /* เริ่มต้นที่กลางแนวตั้ง */
-  left: 30%; /* อยู่ที่ขอบขวาของ sidebar (30%) */
-  transform: translateY(-50%); /* ปรับให้อยู่กึ่งกลางจริงๆ */
-  padding: 0.5rem 0.5rem; /* ลดขนาดปุ่ม */
+  position: absolute; /* ตำแหน่งปุ่มบน container หลัก */
+  top: 5%;
+  left: 25%;
+  transform: translateY(-50%);
+  padding: 0.4rem 0.3rem;
   background-color: #007bff;
   color: white;
   border: none;
@@ -99,8 +98,8 @@ const toggleSidebar = () => {
   display: flex; /* เพื่อจัด icon ให้อยู่ตรงกลาง */
   align-items: center;
   justify-content: center;
-  width: 1.5rem; /* กำหนดความกว้างของปุ่มให้เป็นสี่เหลี่ยมจัตุรัสเล็กๆ */
-  height: 3rem; /* เพิ่มความสูงเพื่อให้จับง่าย */
+  /* width: 1.5rem;
+  height: 1.5rem; */
 }
 
 .toggle-button:hover {
@@ -119,17 +118,4 @@ const toggleSidebar = () => {
   vertical-align: middle;
   line-height: 1; /* จัดให้ icon อยู่กลาง */
 }
-
-/* คุณสามารถใช้ SVG หรือ icon font แทนก็ได้ */
-/* ตัวอย่างถ้าใช้ FontAwesome */
-/*
-.arrow-icon::before {
-    font-family: "Font Awesome 5 Free";
-    font-weight: 900;
-    content: "\f053"; // chevron-left
-}
-.toggle-button.moved .arrow-icon::before {
-    content: "\f054"; // chevron-right
-}
-*/
 </style>

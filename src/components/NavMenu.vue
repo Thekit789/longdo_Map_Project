@@ -93,7 +93,7 @@ nav a:first-of-type {
   }
 
   nav {
-    width: 400px;
+    width: auto;
     font-size: 2rem;
     padding: 2rem 0;
     margin-top: 1rem;
