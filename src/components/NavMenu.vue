@@ -1,30 +1,12 @@
 <script setup>
-import { RouterView, useRoute } from 'vue-router'
-import NavMenu from './components/NavMenu.vue'
-
-import { computed } from 'vue'
-
-const route = useRoute()
-
-const showNavMenu = computed(() => {
-  return route.name !== 'longdomap-content'
-})
+import { RouterLink } from 'vue-router'
 </script>
 
 <template>
-  <div class="main-layout">
-    <section>
-      <div class="wrapper">
-        <NavMenu v-if="showNavMenu" />
-      </div>
-    </section>
-
-    <RouterView v-slot="{ Component }">
-      <Transition name="fade" mode="out-in">
-        <component :is="Component" />
-      </Transition>
-    </RouterView>
-  </div>
+  <nav>
+    <RouterLink to="/">Home</RouterLink>
+    <RouterLink to="/LongDoMap">MAP</RouterLink>
+  </nav>
 </template>
 
 <style scoped>
@@ -46,7 +28,8 @@ nav {
 }
 
 nav a.router-link-exact-active {
-  color: var(--color-text);
+  /* color: var(--color-text); */
+  color: #403f3f;
 }
 
 nav a.router-link-exact-active:hover {
@@ -57,6 +40,7 @@ nav a {
   display: inline-block;
   padding: 0 1rem;
   border-left: 1px solid var(--color-border);
+  font-weight: 600;
 }
 
 nav a:hover {
@@ -74,7 +58,7 @@ nav a:first-of-type {
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0s ease;
+  transition: opacity 0.7s ease;
 }
 
 .fade-enter-from,
@@ -109,7 +93,7 @@ nav a:first-of-type {
   }
 
   nav {
-    width: 400px;
+    width: auto;
     font-size: 2rem;
     padding: 2rem 0;
     margin-top: 1rem;
