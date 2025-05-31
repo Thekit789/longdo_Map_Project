@@ -1,21 +1,91 @@
+<script setup>
+import { ref, watch, computed } from 'vue'
+
+const ProvinceDropdown = [
+  'ลพบุรี',
+  'สระบุรี',
+  'สิงห์บุรี',
+  'อ่างทอง',
+  'นครราชสีมา',
+  'ชัยภูมิ',
+  'สุพรรณบุรี',
+  'นครราชสีมา',
+]
+
+const BranchDropdown = {
+  ลพบุรี: [
+    'สำนักงานใหญ่ (ท่าโพธิ์)',
+    'ลำนารายณ์',
+    'ลำนารายณ์ 2',
+    'โคกสำโรง',
+    'หนองม่วง',
+    'บ้านหมี่',
+    'เสาธง',
+    'ท่าศาลา',
+    'สะพาน 7',
+    'ท่าวุ้ง',
+    'วนเวียนสระแก้ว',
+    'สระโบสถ์',
+    'ท่าหลวง',
+    'โคกเจริญ',
+  ],
+  สระบุรี: [
+    'สระบุรี',
+    'หน้าพระลาน',
+    'บ้านหมอ',
+    'แก่งคอย',
+    'วิหารแดง',
+    'พระพุทธบาท',
+    'มวกเหล็ก',
+    'หนองแค',
+  ],
+  สิงห์บุรี: ['สิงห์บุรี', 'อินทร์บุรี', 'บางระจัน'],
+  ชัยนาท: ['สรรคบุรี', 'วัดสิงห์'],
+  อ่างทอง: ['อ่างทอง', 'โพธิ์ทอง', 'วิเศษชัยชาญ', 'ป่าโมก'],
+  นครราชสีมา: ['ปากช่อง', 'ด่านขุนทด', 'ปักธงชัย', 'ขามทะเลสอ', 'สี่คิ้ว', 'สูงเนิน'],
+  ชัยภูมิ: ['วะตะแบก', 'คำปิง'],
+  สุพรรณบุรี: ['สุพรรณบุรี', 'เดิมบางนางบวช'],
+}
+
+const selectedProvince = ref('')
+const selectedBranch = ref('')
+
+// ใช้ watch เพื่อตรวจสอบการเปลี่ยนแปลงของ selectedProvince
+watch(selectedProvince, (newProvince, oldProvince) => {
+  if (newProvince !== oldProvince) {
+    selectedBranch.value = ''
+  }
+})
+
+// ใช้ computed property เพื่อกรองสาขาที่จะแสดงใน dropdown
+const filteredBranches = computed(() => {
+  return selectedProvince.value ? BranchDropdown[selectedProvince.value] || [] : []
+})
+</script>
+
 <template>
   <div class="dropdown-container">
     <label for="input-select-province" class="dropdown-label">เลือกจังหวัด</label>
-    <select name="province" id="input-select-province">
+    <select name="province" id="input-select-province" v-model="selectedProvince">
       <option value="" disabled selected hidden>เลือกจังหวัด...</option>
-      <option value="bkk">กรุงเทพมหานคร</option>
-      <option value="chiangmai">เชียงใหม่</option>
-      <option value="chonburi">ชลบุรี</option>
+      <option v-for="provinceName in ProvinceDropdown" :key="provinceName" :value="provinceName">
+        {{ provinceName }}
+      </option>
     </select>
   </div>
 
   <div class="dropdown-container">
     <label for="input-select-branch" class="dropdown-label">เลือกสาขา</label>
-    <select name="branch" id="input-select-branch">
+    <select
+      name="branch"
+      id="input-select-branch"
+      v-model="selectedBranch"
+      :disabled="!selectedProvince"
+    >
       <option value="" disabled selected hidden>เลือกสาขา...</option>
-      <option value="branch1">สาขาที่ 1</option>
-      <option value="branch2">สาขาที่ 2</option>
-      <option value="branch3">สาขาที่ 3</option>
+      <option v-for="branchName in filteredBranches" :key="branchName" :value="branchName">
+        {{ branchName }}
+      </option>
     </select>
   </div>
 </template>
@@ -23,31 +93,31 @@
 <style scoped>
 /* Container สำหรับแต่ละ Dropdown เพื่อจัดกลุ่ม Label และ Select */
 .dropdown-container {
-  margin-bottom: 1.5rem; /* เพิ่มระยะห่างระหว่าง Dropdown ทั้งสอง */
-  width: 100%; /* ให้ container กว้างเต็มที่ */
+  margin-bottom: 1.5rem;
+  width: 100%;
 }
 
 /* Style สำหรับ Label */
 .dropdown-label {
-  display: block; /* ทำให้ label อยู่บรรทัดของตัวเอง */
-  margin-bottom: 0.5rem; /* ระยะห่างระหว่าง label กับ select */
+  display: block;
+  margin-bottom: 0.5rem;
   font-size: 1rem;
   color: #555;
   font-weight: bold;
 }
 
-/* Style ทั่วไปสำหรับ select ทั้งหมด */
+/* Style  select  */
 select {
-  width: 100%; /* เต็มความกว้างของ parent */
-  height: 2.5rem; /* ความสูงมาตรฐาน */
-  padding: 0.5rem 1rem; /* เพิ่ม padding ด้านข้างให้ดูสมส่วน */
-  font-size: 1rem; /* ขนาด font */
-  line-height: 1.5; /* กำหนด line-height เพื่อจัดข้อความให้อยู่กึ่งกลาง */
+  width: 100%; /* ความกว้าง parent */
+  height: 2.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  line-height: 1.5;
 
-  border: 1px solid #ccc; /* สีขอบ */
-  border-radius: 8px; /* ความโค้งมน */
-  background-color: #fff; /* พื้นหลังสีขาว */
-  color: #333; /* สีข้อความ */
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #fff;
+  color: #333;
   appearance: none; /* ลบ default style ของ browser */
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -65,7 +135,7 @@ select {
 }
 
 select:hover {
-  border-color: #999;
+  border-color: #007bff;
 }
 
 select:focus {
@@ -74,18 +144,14 @@ select:focus {
   box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
-/* Style สำหรับ placeholder option */
+/* placeholder option */
 select option[disabled]:first-of-type {
   color: #888;
 }
 
-/* Style สำหรับ option ทั่วไป */
+/* Style option */
 select option {
   color: #333;
   background-color: #fff;
 }
-
-/* คุณสามารถเพิ่ม ID เฉพาะเจาะจงได้ หากต้องการสไตล์ที่แตกต่างกันมากๆ */
-/* #input-select-province { ... } */
-/* #input-select-branch { ... } */
 </style>
