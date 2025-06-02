@@ -1,111 +1,42 @@
 <script setup>
-import { ref } from 'vue'
-// import myMarkerIcon from '../assets/map-pin.svg'
+import { ref, watchEffect } from 'vue'
+import provinceCode from '../data/map_coordinates.js'
 
-// Reference to the map instance
+const props = defineProps({
+  province: {
+    type: String,
+    default: '',
+  },
+})
+
 const map = ref(null)
-// Reference to the Longdo API global object
 const longdo = ref(null)
 
-// --- กำหนดพิกัดสำหรับหมุด ---
 const specificMarkerLocations = ref([
-  {
-    lon: 100.342469,
-    lat: 14.868726,
-    title: 'ตำบลสิงห์',
-    detail: 'หมู่ที่ 1<br>ประชากร 1,200 คน<br>จำนวนลูกค้า 300 คน',
-  },
-  {
-    lon: 100.326221,
-    lat: 14.876731,
-    title: 'ตำบลสิงห์',
-    detail: 'หมู่ที่ 2',
-  },
-  {
-    lon: 100.318586,
-    lat: 14.889851,
-    title: 'ตำบลสิงห์',
-    detail: 'หมู่ที่ 3',
-  },
-  {
-    lon: 100.316957,
-    lat: 14.891523,
-    title: 'ตำบลสิงห์',
-    detail: 'หมู่ที่ 4',
-  },
-  {
-    lon: 100.312948,
-    lat: 14.893606,
-    title: 'ตำบลสิงห์',
-    detail: 'หมู่ที่ 5',
-  },
-  {
-    lon: 100.3094432,
-    lat: 14.89888741,
-    title: 'ตำบลสิงห์',
-    detail: 'หมู่ที่ 6',
-  },
-  {
-    lon: 100.3367025,
-    lat: 14.91033872,
-    title: 'ตำบลสิงห์',
-    detail: 'หมู่ที่ 7',
-  },
-  {
-    lon: 100.3669725,
-    lat: 14.87092789,
-    title: 'ตำบลสิงห์',
-    detail: 'หมู่ที่ 8',
-  },
-  {
-    lon: 100.337745116793,
-    lat: 14.8998167262144,
-    title: 'ตำบลสิงห์',
-    detail: 'หมู่ที่ 9',
-  },
+  // ... (โค้ดหมุดของคุณ)
 ])
 
-// Function to be called when the map is loaded
 const onMapLoaded = (loadedMapObject) => {
   if (loadedMapObject && window.longdo) {
-    map.value = loadedMapObject // กำหนด map.value ด้วย loadedMapObject โดยตรง
-    longdo.value = window.longdo // ดึง Longdo API object จาก global scope (window)
-
-    // addCustomOverlay()
-    const object4 = new longdo.value.Overlays.Object('170201;170206', 'IG', {
-      combine: true,
-      simplify: 0.00005,
-      ignorefragment: false,
-      lineColor: '#ff0202', //สีของเส้น
-      fillColor: null, //สีพื้นหลัง
-    })
-    map.value.Overlays.load(object4)
+    map.value = loadedMapObject
+    longdo.value = window.longdo
+    console.log('Longdo Map and API are ready!')
 
     if (map.value && map.value.Ui) {
       map.value.Ui.Scale.visible(true)
       map.value.Ui.Toolbar.visible(false)
     }
 
-    // const marker = new longdo.value.Marker({ lon: 100.56, lat: 13.74 })
-    // map.value.Overlays.add(marker)
-
+    // เพิ่ม Marker เมื่อ Map โหลดเสร็จครั้งแรก
     specificMarkerLocations.value.forEach((data, index) => {
       let markerOptions = {
         title: data.title || `หมุด ${index + 1}`,
         detail: data.detail || `พิกัด: ${data.lat.toFixed(4)}, ${data.lon.toFixed(4)}`,
         visibleRange: { min: 10, max: 20 },
-        // icon: { // ใช้ icon ที่กำหนดไว้ใน assets
-        //   url: myMarkerIcon,
-        //   Size: { width: 32, height: 32 },
-        //   offset: { x: 16, y: 32 },
-        // },
       }
 
       try {
-        let marker = new longdo.value.Marker(
-          { lon: data.lon, lat: data.lat },
-          markerOptions, // ใช้ options ที่ไม่มีการกำหนด icon
-        )
+        let marker = new longdo.value.Marker({ lon: data.lon, lat: data.lat }, markerOptions)
         map.value.Overlays.add(marker)
       } catch (error) {
         console.error(`Error creating marker ${index + 1}:`, error)
@@ -119,6 +50,83 @@ const onMapLoaded = (loadedMapObject) => {
     )
   }
 }
+
+// --- ฟังก์ชันสำหรับจัดการการโหลด Overlay จังหวัด ---
+const loadProvinceOverlay = (provinceName) => {
+  if (!map.value || !longdo.value) {
+    console.log('Map or Longdo API not ready for overlay loading.')
+    return
+  }
+
+  // --- ขั้นตอนสำคัญ: ลบ Overlay 'IG' ทั้งหมดที่มีอยู่ก่อน ---
+  const allOverlays = map.value.Overlays.list() // ดึง Overlay ทั้งหมดบนแผนที่
+  const igOverlaysToRemove = allOverlays.filter((overlay) => overlay.type === 'IG') // กรองเฉพาะ Overlay ที่มี type เป็น 'IG'
+
+  igOverlaysToRemove.forEach((overlay) => {
+    map.value.Overlays.remove(overlay)
+    console.log('Removed an existing IG overlay:', overlay)
+  })
+  // --------------------------------------------------------
+
+  if (provinceName) {
+    const provinceId = provinceCode.find((province) => province.name === provinceName)
+
+    if (provinceId) {
+      // ใช้โค้ดที่คุณยืนยันว่าทำงานได้
+      const object4 = new longdo.value.Overlays.Object(provinceId.code, 'IG', {
+        combine: true,
+        simplify: 0.00005,
+        ignorefragment: false,
+        lineColor: '#ff0202',
+        fillColor: 'rgba(255, 0, 0, 0.1)',
+        lineWidth: 2,
+      })
+
+      if (object4) {
+        // ตรวจสอบอีกครั้งว่า object4 ไม่ใช่ null
+        map.value.Overlays.load(object4)
+        map.value.bound({
+          minLat: provinceId.minLat,
+          minLon: provinceId.minLon,
+          maxLat: provinceId.maxLat,
+          maxLon: provinceId.maxLon,
+        })
+        map.value.zoom(provinceId.zoom, true)
+      } else {
+        console.warn(
+          `longdo.value.Overlays.Object returned null/undefined for province ID: ${provinceId}. This is unexpected.`,
+        )
+      }
+    } else {
+      console.warn(`No province ID found for: ${provinceName}. Please check map_coordinates.js.`)
+    }
+  } else {
+    console.log('No province selected, no overlay to load.')
+  }
+}
+
+// --- Watcher สำหรับ props.province ---
+watchEffect(() => {
+  const currentProvince = props.province
+  const mapInstance = map.value
+  const longdoApi = longdo.value
+
+  // เงื่อนไขหลัก: ต้องมี province, map และ longdo API พร้อม
+  if (currentProvince && mapInstance && longdoApi) {
+    loadProvinceOverlay(currentProvince) // เรียกใช้ฟังก์ชันที่จัดการการลบและเพิ่ม Overlay
+  } else {
+    console.log('watchEffect: Waiting for province, map, or Longdo API to be ready.')
+
+    if (mapInstance && longdoApi) {
+      const allOverlays = mapInstance.Overlays.list()
+      const igOverlaysToRemove = allOverlays.filter((overlay) => overlay.type === 'IG')
+      igOverlaysToRemove.forEach((overlay) => {
+        mapInstance.Overlays.remove(overlay)
+        console.log('Removed an existing IG overlay during watchEffect wait.')
+      })
+    }
+  }
+})
 </script>
 
 <template>

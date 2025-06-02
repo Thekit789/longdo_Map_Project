@@ -8,6 +8,14 @@ import { PanelRightClose } from 'lucide-vue-next'
 
 const isSidebarOpen = ref(true) // เริ่มต้นให้ Sidebar เปิดอยู่
 
+const selectedProvinceForMap = ref('') // ref ใหม่สำหรับเก็บค่าจังหวัดที่เลือกจาก DropdownMenu
+
+// ฟังก์ชันสำหรับรับข้อมูลจาก DropdownMenu
+const handleDropdownSelection = (selection) => {
+  // เราสนใจแค่ province ตอนนี้
+  selectedProvinceForMap.value = selection.province
+}
+
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value
 }
@@ -17,7 +25,7 @@ const toggleSidebar = () => {
   <div class="map-page-container">
     <aside class="map-sidebar" :class="{ closed: !isSidebarOpen }">
       <NavMenu />
-      <DropdownMenu />
+      <DropdownMenu @update:province="handleDropdownSelection" />
     </aside>
 
     <button @click="toggleSidebar" class="toggle-button" :class="{ moved: !isSidebarOpen }">
@@ -26,7 +34,7 @@ const toggleSidebar = () => {
     </button>
 
     <main class="map-content" :class="{ expanded: !isSidebarOpen }">
-      <RouterView />
+      <RouterView :province="selectedProvinceForMap" />
     </main>
   </div>
 </template>
