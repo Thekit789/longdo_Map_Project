@@ -9,11 +9,12 @@ import { PanelRightClose } from 'lucide-vue-next'
 const isSidebarOpen = ref(true) // เริ่มต้นให้ Sidebar เปิดอยู่
 
 const selectedProvinceForMap = ref('') // ref ใหม่สำหรับเก็บค่าจังหวัดที่เลือกจาก DropdownMenu
+const selectedBranchForMap = ref('') // ref ใหม่สำหรับเก็บค่าจังหวัดที่เลือกจาก DropdownMenu
 
 // ฟังก์ชันสำหรับรับข้อมูลจาก DropdownMenu
 const handleDropdownSelection = (selection) => {
-  // เราสนใจแค่ province ตอนนี้
   selectedProvinceForMap.value = selection.province
+  selectedBranchForMap.value = selection.branch
 }
 
 const toggleSidebar = () => {
@@ -34,7 +35,7 @@ const toggleSidebar = () => {
     </button>
 
     <main class="map-content" :class="{ expanded: !isSidebarOpen }">
-      <RouterView :province="selectedProvinceForMap" />
+      <RouterView :province="selectedProvinceForMap" :branch="selectedBranchForMap" />
     </main>
   </div>
 </template>

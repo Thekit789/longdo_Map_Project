@@ -61,16 +61,24 @@ const selectedProvince = ref('')
 const selectedBranch = ref('')
 
 // ใช้ watch เพื่อตรวจสอบการเปลี่ยนแปลงของ selectedProvince
-watch(selectedProvince, (newProvince, oldProvince) => {
+watch([selectedProvince, selectedBranch], ([newProvince, newBranch], [oldProvince, oldBranch]) => {
+  // เมื่อจังหวัดเปลี่ยน ให้รีเซ็ตสาขา
   if (newProvince !== oldProvince) {
-    selectedBranch.value = ''
+    selectedBranch.value = '' // ล้างสาขาที่เลือกเมื่อจังหวัดเปลี่ยน
   }
 
+  if (newBranch !== oldBranch) {
+    console.log('Branch changed:', newBranch)
+  } else {
+    console.log('No change in branch selection')
+  }
   // เมื่อจังหวัดหรือสาขาเปลี่ยน ให้ emit event พร้อมข้อมูลที่เลือก
   emits('update:province', {
     province: newProvince,
-    branch: selectedBranch.value,
+    branch: newBranch,
   })
+  console.log('Emitting province:', newProvince)
+  console.log('Emitting branch:', selectedBranch.value)
 })
 
 // ใช้ computed property เพื่อกรองสาขาที่จะแสดงใน dropdown

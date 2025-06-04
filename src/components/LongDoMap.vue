@@ -7,14 +7,17 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  branch: {
+    type: String,
+    default: '',
+  },
 })
 
 const map = ref(null)
 const longdo = ref(null)
 
-const specificMarkerLocations = ref([
-  // ... (โค้ดหมุดของคุณ)
-])
+// Ref สำหรับเก็บ Marker ที่เพิ่มเข้ามา (ถ้าจะเพิ่ม Marker)
+const branchMarker = ref(null)
 
 const onMapLoaded = (loadedMapObject) => {
   if (loadedMapObject && window.longdo) {
@@ -27,21 +30,9 @@ const onMapLoaded = (loadedMapObject) => {
       map.value.Ui.Toolbar.visible(false)
     }
 
-    // เพิ่ม Marker เมื่อ Map โหลดเสร็จครั้งแรก
-    specificMarkerLocations.value.forEach((data, index) => {
-      let markerOptions = {
-        title: data.title || `หมุด ${index + 1}`,
-        detail: data.detail || `พิกัด: ${data.lat.toFixed(4)}, ${data.lon.toFixed(4)}`,
-        visibleRange: { min: 10, max: 20 },
-      }
-
-      try {
-        let marker = new longdo.value.Marker({ lon: data.lon, lat: data.lat }, markerOptions)
-        map.value.Overlays.add(marker)
-      } catch (error) {
-        console.error(`Error creating marker ${index + 1}:`, error)
-      }
-    })
+    // เมื่อ Map โหลดเสร็จครั้งแรก ให้เรียก watchEffect เพื่อโหลด Overlay/ปรับแผนที่
+    // (watchEffect จะถูกเรียกเมื่อ dependencies เปลี่ยนแปลง หรือเมื่อ component ถูก mount ครั้งแรก)
+    // ดังนั้นไม่จำเป็นต้องเรียก loadProvinceOverlay ตรงๆ ที่นี่อีก
   } else {
     console.error(
       'Failed to initialize map instance. loadedMapObject or window.longdo is missing.',
@@ -51,29 +42,36 @@ const onMapLoaded = (loadedMapObject) => {
   }
 }
 
-// --- ฟังก์ชันสำหรับจัดการการโหลด Overlay จังหวัด ---
-const loadProvinceOverlay = (provinceName) => {
+// --- ฟังก์ชันสำหรับจัดการการโหลด Overlay จังหวัดและโฟกัสสาขา ---
+// **สำคัญ: เพิ่ม currentBranch เป็น parameter**
+const loadProvinceOverlay = (provinceName, branchName) => {
   if (!map.value || !longdo.value) {
     console.log('Map or Longdo API not ready for overlay loading.')
     return
   }
 
-  // --- ขั้นตอนสำคัญ: ลบ Overlay 'IG' ทั้งหมดที่มีอยู่ก่อน ---
-  const allOverlays = map.value.Overlays.list() // ดึง Overlay ทั้งหมดบนแผนที่
-  const igOverlaysToRemove = allOverlays.filter((overlay) => overlay.type === 'IG') // กรองเฉพาะ Overlay ที่มี type เป็น 'IG'
-
-  igOverlaysToRemove.forEach((overlay) => {
-    map.value.Overlays.remove(overlay)
-    console.log('Removed an existing IG overlay:', overlay)
+  // --- ลบ Overlay 'IG' ทั้งหมดที่มีอยู่ก่อน ---
+  map.value.Overlays.list().forEach((overlay) => {
+    if (overlay.type === 'IG') {
+      map.value.Overlays.remove(overlay)
+      console.log('Removed an existing IG overlay:', overlay)
+    }
   })
+  // --- ลบ Marker สาขาเก่าออก หากมี ---
+  if (branchMarker.value) {
+    map.value.Overlays.remove(branchMarker.value)
+    branchMarker.value = null // รีเซ็ต ref
+    console.log('Removed existing branch marker.')
+  }
+
   // --------------------------------------------------------
 
   if (provinceName) {
-    const provinceId = provinceCode.find((province) => province.name === provinceName)
+    const foundProvinceData = provinceCode.find((province) => province.name === provinceName)
 
-    if (provinceId) {
-      // ใช้โค้ดที่คุณยืนยันว่าทำงานได้
-      const object4 = new longdo.value.Overlays.Object(provinceId.code, 'IG', {
+    if (foundProvinceData) {
+      // 1. โหลด Overlay ของจังหวัด
+      const provinceOverlay = new longdo.value.Overlays.Object(foundProvinceData.code, 'IG', {
         combine: true,
         simplify: 0.00005,
         ignorefragment: false,
@@ -82,49 +80,114 @@ const loadProvinceOverlay = (provinceName) => {
         lineWidth: 2,
       })
 
-      if (object4) {
-        // ตรวจสอบอีกครั้งว่า object4 ไม่ใช่ null
-        map.value.Overlays.load(object4)
-        map.value.bound({
-          minLat: provinceId.minLat,
-          minLon: provinceId.minLon,
-          maxLat: provinceId.maxLat,
-          maxLon: provinceId.maxLon,
-        })
-        map.value.zoom(provinceId.zoom, true)
+      if (provinceOverlay) {
+        map.value.Overlays.load(provinceOverlay)
+        console.log(`Loaded province overlay for: ${provinceName}`)
       } else {
         console.warn(
-          `longdo.value.Overlays.Object returned null/undefined for province ID: ${provinceId}. This is unexpected.`,
+          `longdo.value.Overlays.Object returned null/undefined for province ID: ${foundProvinceData.code}. This is unexpected.`,
         )
       }
+
+      // 2. ตรวจสอบว่ามีการเลือกสาขาหรือไม่ และโฟกัสแผนที่
+      if (branchName && foundProvinceData.branch && foundProvinceData.branch.length > 0) {
+        const foundBranchData = foundProvinceData.branch.find((b) => b.branchName === branchName)
+
+        if (foundBranchData) {
+          // โฟกัสไปที่สาขาที่เลือก
+          map.value.bound({
+            minLat: foundBranchData.minLat,
+            minLon: foundBranchData.minLon,
+            maxLat: foundBranchData.maxLat,
+            maxLon: foundBranchData.maxLon,
+          })
+          map.value.zoom(foundBranchData.zoom, true)
+
+          // สร้างและเพิ่ม Marker สำหรับสาขา (ถ้าต้องการ)
+          // สามารถกำหนด icon หรือ detail เพิ่มเติมได้
+          const markerOptions = {
+            title: foundBranchData.branchName,
+            detail: `Lat: ${foundBranchData.lat.toFixed(4)}, Lon: ${foundBranchData.lon.toFixed(4)}`,
+          }
+          const marker = new longdo.value.Marker(
+            { lon: foundBranchData.lon, lat: foundBranchData.lat },
+            markerOptions,
+          )
+          map.value.Overlays.add(marker)
+          branchMarker.value = marker // เก็บ reference ไว้เพื่อลบทีหลัง
+
+          console.log(`Focused on branch: ${foundBranchData.branchName} in ${provinceName}`)
+        } else {
+          console.warn(
+            `No branch data found for: ${branchName} in ${provinceName}. Falling back to province view.`,
+          )
+          // ถ้าไม่พบสาขาที่ระบุ ให้โฟกัสไปที่จังหวัดแทน
+          map.value.bound({
+            minLat: foundProvinceData.minLat,
+            minLon: foundProvinceData.minLon,
+            maxLat: foundProvinceData.maxLat,
+            maxLon: foundProvinceData.maxLon,
+          })
+          map.value.zoom(foundProvinceData.zoom, true)
+        }
+      } else {
+        // ไม่มีสาขาที่ถูกเลือก หรือจังหวัดไม่มีข้อมูลสาขาเลย
+        // โฟกัสไปที่จังหวัด
+        map.value.bound({
+          minLat: foundProvinceData.minLat,
+          minLon: foundProvinceData.minLon,
+          maxLat: foundProvinceData.maxLat,
+          maxLon: foundProvinceData.maxLon,
+        })
+        map.value.zoom(foundProvinceData.zoom, true)
+        console.log(`Focused on province: ${provinceName} (no specific branch selected).`)
+      }
     } else {
-      console.warn(`No province ID found for: ${provinceName}. Please check map_coordinates.js.`)
+      console.warn(`No province data found for: ${provinceName}. Please check map_coordinates.js.`)
+      // ถ้าไม่พบข้อมูลจังหวัดเลย อาจจะซูมไปที่ Default view
+      // map.value.zoom(6, true);
     }
   } else {
     console.log('No province selected, no overlay to load.')
+    // เมื่อไม่มีจังหวัดถูกเลือก อาจจะลบ Overlay ทั้งหมดและซูมกลับไปที่ Default view
+    // map.value.Overlays.clear(); // ลบ Overlay ทั้งหมด
+    // map.value.zoom(6, true); // ซูมกลับไปที่ระดับประเทศ
   }
 }
 
-// --- Watcher สำหรับ props.province ---
+// --- Watcher สำหรับ props.province และ props.branch ---
 watchEffect(() => {
   const currentProvince = props.province
+  const currentBranch = props.branch
   const mapInstance = map.value
   const longdoApi = longdo.value
 
-  // เงื่อนไขหลัก: ต้องมี province, map และ longdo API พร้อม
-  if (currentProvince && mapInstance && longdoApi) {
-    loadProvinceOverlay(currentProvince) // เรียกใช้ฟังก์ชันที่จัดการการลบและเพิ่ม Overlay
-  } else {
-    console.log('watchEffect: Waiting for province, map, or Longdo API to be ready.')
-
-    if (mapInstance && longdoApi) {
-      const allOverlays = mapInstance.Overlays.list()
-      const igOverlaysToRemove = allOverlays.filter((overlay) => overlay.type === 'IG')
-      igOverlaysToRemove.forEach((overlay) => {
-        mapInstance.Overlays.remove(overlay)
-        console.log('Removed an existing IG overlay during watchEffect wait.')
+  // เงื่อนไข: ต้องมี mapInstance และ longdoApi พร้อมก่อน
+  // และต้องมีการเลือก province หรือ branch ถึงจะทำการโหลด/อัปเดตแผนที่
+  if (mapInstance && longdoApi) {
+    if (currentProvince || currentBranch) {
+      loadProvinceOverlay(currentProvince, currentBranch) // เรียกใช้ฟังก์ชันที่จัดการการลบและเพิ่ม Overlay
+    } else {
+      // กรณีที่ไม่มีทั้ง province และ branch เลือก (อาจจะเป็นค่าเริ่มต้น)
+      console.log('watchEffect: No province or branch selected. Clearing overlays if any.')
+      // ลบ Overlay 'IG' ทั้งหมดเมื่อไม่มีการเลือกจังหวัด/สาขา
+      mapInstance.Overlays.list().forEach((overlay) => {
+        if (overlay.type === 'IG') {
+          mapInstance.Overlays.remove(overlay)
+          console.log('Removed an existing IG overlay due to no selection:', overlay)
+        }
       })
+      // ลบ Marker สาขาเก่าออก
+      if (branchMarker.value) {
+        mapInstance.Overlays.remove(branchMarker.value)
+        branchMarker.value = null
+        console.log('Removed existing branch marker due to no selection.')
+      }
+      // ซูมกลับไปที่มุมมองเริ่มต้น เช่น ทั่วประเทศ
+      mapInstance.zoom(6, true) // หรือค่า zoom เริ่มต้นที่เหมาะสม
     }
+  } else {
+    console.log('watchEffect: Waiting for map instance and Longdo API to be ready.')
   }
 })
 </script>
