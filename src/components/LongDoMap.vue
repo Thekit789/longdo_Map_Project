@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watchEffect } from 'vue'
-import provinceCode from '../data/map_coordinates.js'
+import provinceCode from '@/data/Map_Coordinates.js'
+import branchDatail from '@/data/Map_Branch_Detail.js'
 
 const props = defineProps({
   province: {
@@ -92,7 +93,7 @@ const loadProvinceOverlay = (provinceName, branchName) => {
       // 2. ตรวจสอบว่ามีการเลือกสาขาหรือไม่ และโฟกัสแผนที่
       if (branchName && foundProvinceData.branch && foundProvinceData.branch.length > 0) {
         const foundBranchData = foundProvinceData.branch.find((b) => b.branchName === branchName)
-
+        const details = branchDatail.find((b) => b.name === branchName) || {}
         if (foundBranchData) {
           // โฟกัสไปที่สาขาที่เลือก
           map.value.bound({
@@ -107,7 +108,9 @@ const loadProvinceOverlay = (provinceName, branchName) => {
           // สามารถกำหนด icon หรือ detail เพิ่มเติมได้
           const markerOptions = {
             title: foundBranchData.branchName,
-            detail: `Lat: ${foundBranchData.lat.toFixed(4)}, Lon: ${foundBranchData.lon.toFixed(4)}`,
+            detail: details.branchDetail
+              ? details.branchDetail
+              : `Lat: ${foundBranchData.lat.toFixed(4)}, Lon: ${foundBranchData.lon.toFixed(4)}`,
           }
           const marker = new longdo.value.Marker(
             { lon: foundBranchData.lon, lat: foundBranchData.lat },
